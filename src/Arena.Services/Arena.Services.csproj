@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Arena.Common\Arena.Common.csproj" />
+    <ProjectReference Include="..\Arena.Domain\Arena.Domain.csproj" />
+    <ProjectReference Include="..\Arena.Persistence\Arena.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>
