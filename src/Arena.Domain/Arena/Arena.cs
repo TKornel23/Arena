@@ -5,8 +5,6 @@ namespace Arena.Domain;
 
 public record Arena
 {
-    public int Status { get; set; } = 1;
-
     public Guid Guid { get; set; } = Guid.NewGuid();
 
     public int RoundCount { get; set; }

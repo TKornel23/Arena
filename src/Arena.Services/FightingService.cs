@@ -23,6 +23,10 @@ public class FightingService : IFightingService
             throw new InvalidGuidException($"Guid not found: {guid}");
         }
 
+        arena.Rounds = arena.Rounds
+            .OrderBy(x => x.Id)
+            .ToList();
+
         return arena;
     }
 
