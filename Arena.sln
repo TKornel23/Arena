@@ -23,6 +23,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Arena.Services.Tests", "tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Arena.Domain.Tests", "tests\Arena.Domain.Tests\Arena.Domain.Tests.csproj", "{D717D7F9-CE9B-4143-B41A-F0399EF36177}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arena.AzureApi", "src\Arena.AzureApi\Arena.AzureApi.csproj", "{4D90E819-FA2A-4BCF-A221-3CE510D2F5AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,10 @@ Global
 		{D717D7F9-CE9B-4143-B41A-F0399EF36177}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D717D7F9-CE9B-4143-B41A-F0399EF36177}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D717D7F9-CE9B-4143-B41A-F0399EF36177}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D90E819-FA2A-4BCF-A221-3CE510D2F5AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D90E819-FA2A-4BCF-A221-3CE510D2F5AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D90E819-FA2A-4BCF-A221-3CE510D2F5AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D90E819-FA2A-4BCF-A221-3CE510D2F5AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -74,6 +80,7 @@ Global
 		{783655C9-89BD-4F2D-932F-6407E46B50C3} = {5F97D5B0-9530-45CA-AD75-4B51DEE744EC}
 		{B30C9620-5374-445D-A631-828F96B9F6EE} = {ACE362BB-6990-4627-82B4-4468B947A693}
 		{D717D7F9-CE9B-4143-B41A-F0399EF36177} = {ACE362BB-6990-4627-82B4-4468B947A693}
+		{4D90E819-FA2A-4BCF-A221-3CE510D2F5AE} = {5F97D5B0-9530-45CA-AD75-4B51DEE744EC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B119A924-3F76-42C7-B136-8695A619B2D6}

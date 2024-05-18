@@ -9,7 +9,7 @@ public class FightingServiceTests
     {
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
+        var fightingervice = new FightingService(repositoryMock.Object);
 
         var (attacker, defender) = FightingService.GetFighters(new()
         {
@@ -26,7 +26,7 @@ public class FightingServiceTests
     {
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
+        var fightingervice = new FightingService(repositoryMock.Object);
 
         var action = () => FightingService.GetFighters(new()
         {
@@ -45,17 +45,17 @@ public class FightingServiceTests
 
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
+        var fightingervice = new FightingService(repositoryMock.Object);
 
         var action = () => fightingervice.GetHistory(Guid.Parse(guid));
 
         action.Should()
-            .Throw<InvalidGuidException>()
+            .ThrowAsync<InvalidGuidException>()
             .WithMessage($"Guid not found: {guid}");
     }
 
     [Fact]
-    public void GetHistory_With_Valid_Guid_Should_Return_Arena()
+    public async Task GetHistory_With_Valid_Guid_Should_Return_Arena()
     {
         const string stringGuid = "1A3B944E-3632-467B-A53A-206305310BAE";
 
@@ -72,11 +72,11 @@ public class FightingServiceTests
 
         repositoryMock
             .Setup(x => x.Get(x => x.Guid == guid, null, "Rounds"))
-            .Returns(new List<ArenaEntity>() { arena });
+            .ReturnsAsync(new List<ArenaEntity>() { arena });
 
-        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
+        var fightingervice = new FightingService(repositoryMock.Object);
 
-        var result = fightingervice.GetHistory(arena.Guid);
+        var result = await fightingervice.GetHistory(arena.Guid);
 
         result.Guid.Should().Be(arena.Guid);
     }
@@ -86,12 +86,12 @@ public class FightingServiceTests
     {
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
+        var fightingervice = new FightingService(repositoryMock.Object);
 
         var action = () => fightingervice.InitializeArena(0);
 
         action.Should().
-            Throw<ArgumentException>()
+            ThrowAsync<ArgumentException>()
             .WithMessage("Arena count cannot be null. (Parameter 'count')");
     }
 
@@ -100,17 +100,20 @@ public class FightingServiceTests
     {
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
+        repositoryMock.Setup(x => x.Save())
+            .ReturnsAsync(false);
+
+        var fightingervice = new FightingService(repositoryMock.Object);
 
         var action = () => fightingervice.InitializeArena(1);
 
         action.Should().
-            Throw<InitializingFailedException>()
+            ThrowAsync<InitializingFailedException>()
             .WithMessage("Arena initialization failed.");
     }
 
     [Fact]
-    public void InitializeArena_Succesfull_Saving_Arena_Should_Return_Guid()
+    public async Task InitializeArena_Succesfull_Saving_Arena_Should_Return_Guid()
     {
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
@@ -118,15 +121,15 @@ public class FightingServiceTests
 
         roundRepositoryMock
             .Setup(x => x.Save())
-            .Returns(true);
+            .ReturnsAsync(true);
 
         repositoryMock
             .Setup(x => x.Save())
-            .Returns(true);
+            .ReturnsAsync(true);
 
-        var fightingervice = new FightingService(repositoryMock.Object, roundRepositoryMock.Object);
+        var fightingervice = new FightingService(repositoryMock.Object);
 
-        fightingervice.InitializeArena(1).Should().NotBeEmpty();
+        (await fightingervice.InitializeArena(1)).Should().NotBeEmpty();
     }
 
     [Fact]

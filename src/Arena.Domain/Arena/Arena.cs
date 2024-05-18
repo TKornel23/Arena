@@ -8,6 +8,7 @@ public record Arena
     public Guid Guid { get; set; } = Guid.NewGuid();
 
     public int RoundCount { get; set; }
+    public Status Status { get; set; } = Status.InProgress;
 
     [NotMapped]
     [JsonIgnore]

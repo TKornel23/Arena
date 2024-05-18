@@ -11,17 +11,23 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         this.dbSet = context.Set<T>();
     }
 
-    public T? Get(Guid guid)
+    public void Update(T entry)
     {
-        return this.dbSet.Find(guid);
+        dbSet.Attach(entry);
+        context.Entry(entry).State = EntityState.Modified;
     }
 
-    public virtual IEnumerable<T> Get(
+    public async Task<T?> Get(Guid guid)
+    {
+        return await this.dbSet.FindAsync(guid);
+    }
+
+    public virtual async Task<IEnumerable<T>> Get(
             Expression<Func<T, bool>>? filter = null,
             Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
             string includeProperties = "")
     {
-        IQueryable<T> query = this.dbSet;
+        IQueryable<T> query = this.dbSet;        
 
         if (filter != null)
         {
@@ -34,28 +40,30 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
             query = query.Include(includeProperty);
         }
 
+        query = query.AsNoTracking();
+
         if (orderBy != null)
         {
-            return orderBy(query).ToList();
+            return await orderBy(query).ToListAsync();
         }
         else
         {
-            return query.ToList();
+            return await query.ToListAsync();
         }
     }
 
-    public void Insert(T entity)
+    public async Task Insert(T entity)
     {
-        this.dbSet.Add(entity);
+        await this.dbSet.AddAsync(entity);
     }
 
-    public void Insert(IEnumerable<T> entities)
+    public async Task Insert(IEnumerable<T> entities)
     {
-        this.dbSet.AddRange(entities);
+        await this.dbSet.AddRangeAsync(entities);
     }
 
-    public bool Save()
+    public async Task<bool> Save()
     {
-        return this.context.SaveChanges() > 0;
+        return await this.context.SaveChangesAsync() > 0;
     }
 }

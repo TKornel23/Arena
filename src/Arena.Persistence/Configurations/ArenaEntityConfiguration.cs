@@ -8,9 +8,11 @@ internal class ArenaEntityConfiguration : IEntityTypeConfiguration<ArenaEntity>
 
         builder.HasKey(e => e.Guid);
 
-        //builder.HasMany(e => e.History)
-        //    .WithOne(e => e.Arena)
-        //    .HasForeignKey(e => e.ArenaId);
+        builder.Property(e => e.Status)
+            .HasColumnName("STATUS")
+            .HasConversion(
+                v => v.ToString(),
+                v => ParseEnum(v));
 
         builder.Property(e => e.Guid)
             .HasColumnName("ID")
@@ -18,6 +20,16 @@ internal class ArenaEntityConfiguration : IEntityTypeConfiguration<ArenaEntity>
 
         builder.Property(e => e.RoundCount)
             .HasColumnName("ROUND_COUNT");
+    }
+
+    private static Status ParseEnum(string input)
+    {
+        if (Enum.TryParse<Status>(input, true, out var res))
+        {
+            return res;
+        }
+
+        return default;
     }
 }
 

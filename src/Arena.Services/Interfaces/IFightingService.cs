@@ -2,6 +2,6 @@
 
 public interface IFightingService
 {
-    Guid InitializeArena(int count);
-    ArenaEntity GetHistory(Guid guid);
+    Task<Guid> InitializeArena(int count);
+    Task<ArenaEntity> GetHistory(Guid guid);
 }

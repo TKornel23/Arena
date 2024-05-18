@@ -28,6 +28,11 @@ namespace Arena.Persistence.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("ROUND_COUNT");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("STATUS");
+
                     b.HasKey("Guid");
 
                     b.ToTable("Arena", "ar");

@@ -4,62 +4,67 @@ namespace Arena.Services;
 public class FightingService : IFightingService
 {
     private IGenericRepository<ArenaEntity> ArenaRepository { get; set; }
-    private IGenericRepository<Round> RoundsRepository { get; set; }
+    private IGenericRepository<Round> RoundRepository { get; set; }
 
     public FightingService(
         IGenericRepository<ArenaEntity> arenaRepository,
-        IGenericRepository<Round> roundsRepository)
+        IGenericRepository<Round> roundRepository)
     {
         this.ArenaRepository = arenaRepository;
-        RoundsRepository = roundsRepository;
+        RoundRepository = roundRepository;
 
     }
 
-    public ArenaEntity GetHistory(Guid guid)
+    public async Task<ArenaEntity> GetHistory(Guid guid)
     {
-        if(this.ArenaRepository.Get(x => x.Guid == guid, includeProperties: "Rounds")
-            .FirstOrDefault() is not ArenaEntity arena)
+        if(await this.ArenaRepository.Get(guid) is not ArenaEntity arena)
         {
             throw new InvalidGuidException($"Guid not found: {guid}");
         }
 
-        arena.Rounds = arena.Rounds
-            .OrderBy(x => x.Id)
-            .ToList();
+        arena.Rounds = (await this.RoundRepository.Get(x => x.ArenaGuid == guid)).ToList();
 
         return arena;
     }
 
-    public Guid InitializeArena(int count)
+    public async Task<Guid> InitializeArena(int count)
     {
-        if(count == 0)
+        try
         {
-            throw new ArgumentException("Arena count cannot be null.", nameof(count));
+            if (count == 0)
+            {
+                throw new ArgumentException("Arena count cannot be null.", nameof(count));
+            }
+
+            var arena = new ArenaEntity()
+            {
+                RoundCount = count
+            };
+
+            await this.ArenaRepository.Insert(arena);
+
+            if(!await this.ArenaRepository.Save())
+            {
+                throw new InitializingFailedException("Arena initialization failed.");
+            }
+
+            HttpTriggerFightFunction(arena.Guid);
+
+            return arena.Guid;
         }
-
-        var arena = new ArenaEntity()
+        catch(ArgumentException)
         {
-            RoundCount = count
-        };        
-
-        this.ArenaRepository.Insert(arena);
-
-        this.ArenaRepository.Save();
-
-        InitializeFighters(arena);
-
-        Fight(arena);
-
-        this.RoundsRepository.Insert(arena.Rounds);
-
-        return this.ArenaRepository.Save()
-            ? arena.Guid 
-            : throw new InitializingFailedException("Arena initialization failed.");
+            throw;
+        }
+        catch
+        {
+            throw;
+        }
     }
 
     internal static (Entity attacker, Entity defender) GetFighters(List<Entity> fighters)
     {
-        if(fighters.Count < 2)
+        if(fighters.Count(x => x.Health != 0) < 2)
         {
             throw new ArgumentException("List count cannot be less than 2", nameof(fighters));
         }
@@ -74,7 +79,30 @@ public class FightingService : IFightingService
         }
         while (attackerPosition == defenderPosition);
 
-        return (fighters[attackerPosition], fighters[defenderPosition]);
+        return (fighters.ElementAt(attackerPosition), fighters.ElementAt(defenderPosition));
+    }
+
+    private static string BuildUri(Guid guid)
+    {
+        var uriBuilder = new UriBuilder("http://localhost:7160/api/fight");
+
+        var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+
+        query["GUID"] = guid.ToString();
+
+        uriBuilder.Query = query.ToString();
+
+        return uriBuilder.ToString();
+    }
+
+    private static void HttpTriggerFightFunction(Guid guid)
+    {
+        var httpClient = new HttpClient();
+
+        var uri = BuildUri(guid);
+
+        //Fire and forget
+        _ = Task.Run(async () => await httpClient.GetAsync(uri));
     }
 
     public static void InitializeFighters(ArenaEntity arena)
@@ -87,51 +115,84 @@ public class FightingService : IFightingService
         }
     }
 
-    public static void Fight(ArenaEntity arena)
+    public static (Entity winner, List<Round> rounds) FightPartition(List<Entity> entities, int roundIndex, Guid arenaGuid)
     {
-        int index = 0;
+        var rounds = new List<Round>();
 
-        while (arena.Fighters!.Count != 1)
+        while (entities.Count != 1)
         {
-            var (attacker, defender) = GetFighters(arena.Fighters);
+            var (attacker, defender) = GetFighters(entities);
 
             attacker.Attack(defender);
 
             if (defender.Health == 0)
             {
-                arena.Fighters.Remove(defender);
+                entities.Remove(defender);
             }
 
             if (attacker.Health == 0)
             {
-                arena.Fighters.Remove(attacker);
+                entities.Remove(attacker);
             }
 
-            RestoreHealth(arena.Fighters.Where(x => x.Guid != attacker.Guid && x.Guid != defender.Guid));
+            RestoreHealth(entities.Where(x => x.Guid != attacker.Guid && x.Guid != defender.Guid));
 
-            arena.Rounds.Add(
-                new()
-                {
-                    Attacker = new()
-                    {
-                        Change = attacker.Change,
-                        MaxHealth = attacker.MaxHealth,
-                        Guid = attacker.Guid,
-                        Health = attacker.Health,
-                        Role = attacker.Role,
-                    },
-                    Defender = new()
-                    {
-                        Change = defender.Change,
-                        MaxHealth = defender.MaxHealth,
-                        Guid = defender.Guid,
-                        Health = defender.Health,
-                        Role = defender.Role,
-                    },
-                    Id = index++,
-                    ArenaGuid = arena.Guid,
-                });
+            rounds.Add(AddRound(attacker, defender, roundIndex, arenaGuid));
+
+            roundIndex++;
         }
+
+        return (entities[0], rounds);
+    }
+
+    private static Round AddRound(Entity attacker, Entity defender, int roundIndex, Guid arenaGuid)
+    {
+        return new()
+        {
+            Attacker = new()
+            {
+                Change = attacker.Change,
+                MaxHealth = attacker.MaxHealth,
+                Guid = attacker.Guid,
+                Health = attacker.Health,
+                Role = attacker.Role,
+            },
+            Defender = new()
+            {
+                Change = defender.Change,
+                MaxHealth = defender.MaxHealth,
+                Guid = defender.Guid,
+                Health = defender.Health,
+                Role = defender.Role,
+            },
+            Id = roundIndex,
+            ArenaGuid = arenaGuid
+        };
+    }
+
+    public static void Fight(ArenaEntity arena)
+    {
+        var rangePartitioner = Partitioner.Create(0, arena.Fighters.Count, 100);
+
+        var winners = new ConcurrentBag<Entity>();
+        var rounds = new ConcurrentBag<Round>();
+
+        Parallel.ForEach(rangePartitioner, (range, loopState) =>
+        {
+            var entites = arena.Fighters.Skip(range.Item1).Take(range.Item2 - range.Item1).ToList();
+
+            var partition = FightPartition(entites, range.Item1, arena.Guid);
+
+            winners.Add(partition.winner);
+            partition.rounds.ForEach(x => rounds.Add(x));
+        });
+
+        var (_, lastRounds) = FightPartition(winners.ToList(), rounds.Count, arena.Guid);
+
+        lastRounds.ForEach(x => rounds.Add(x));
+
+        arena.Fighters = winners.ToList();
+        arena.Rounds = rounds.ToList();
     }
 
     internal static void RestoreHealth(IEnumerable<Entity> fighters)

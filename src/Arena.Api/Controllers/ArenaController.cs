@@ -12,11 +12,11 @@ public class ArenaController : ControllerBase
     }
 
     [HttpGet("{count:int}")]
-    public IActionResult GetIdentifier(int count)
+    public async Task<IActionResult> GetIdentifier(int count)
     {
         try
         {
-            var id = this.FightingService.InitializeArena(count);
+            var id = await this.FightingService.InitializeArena(count);
 
             return Ok(id);
         }
@@ -35,18 +35,32 @@ public class ArenaController : ControllerBase
     }
 
     [HttpGet("history/{guid}")]
-    public ActionResult<ArenaDTO> GetHistory(Guid guid)
+    public async Task<ActionResult<ArenaDTO>> GetHistory(Guid guid)
     {
         try
         {
-            var arena = this.FightingService.GetHistory(guid);
+            var arena = await this.FightingService.GetHistory(guid);
+
+            if(arena.Status == Status.Failed)
+            {
+                throw new ArenaFailedException("Fighting failed");
+            }
+
+            if(arena.Status == Status.InProgress)
+            {
+                return Ok("Fighting is still in progress");
+            }
 
             return Ok(new ArenaEntity()
             {
                 Rounds = arena.Rounds,
                 Guid = arena.Guid,
-                RoundCount = arena.Rounds.Count()
+                RoundCount = arena.Rounds.Count
             });
+        }
+        catch(ArenaFailedException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch
         {

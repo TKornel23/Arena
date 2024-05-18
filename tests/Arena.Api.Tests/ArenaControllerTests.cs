@@ -3,7 +3,7 @@ namespace Arena.Api.Tests;
 public class ArenaControllerTests
 {
     [Fact]
-    public void Succesfull_Request_Should_Return_Ok_With_Guid()
+    public async Task Succesfull_Request_Should_Return_Ok_With_Guid()
     {
         var fighterServiceMock = new Mock<IFightingService>();
 
@@ -11,17 +11,17 @@ public class ArenaControllerTests
 
         fighterServiceMock.
             Setup(x => x.InitializeArena(It.IsAny<int>()))
-            .Returns(Guid.Parse(expectedGuid));
+            .ReturnsAsync(Guid.Parse(expectedGuid));
 
         var arenaController = new ArenaController(fighterServiceMock.Object);
 
-        var response = arenaController.GetIdentifier(10);
+        var response = await arenaController.GetIdentifier(10);
 
         response.As<OkObjectResult>().Value.Should().Be(Guid.Parse(expectedGuid));
     }
 
     [Fact]
-    public void Failed_Request_Should_Return_BadRequest_With_Expected_Message()
+    public async Task Failed_Request_Should_Return_BadRequest_With_Expected_Message()
     {
         var fighterServiceMock = new Mock<IFightingService>();
 
@@ -31,13 +31,13 @@ public class ArenaControllerTests
 
         var arenaController = new ArenaController(fighterServiceMock.Object);
 
-        var response = arenaController.GetIdentifier(10);
+        var response = await arenaController.GetIdentifier(10);
 
         response.As<BadRequestObjectResult>().Value.Should().Be("Arena initialization failed.");
     }
 
     [Fact]
-    public void Invalid_Count_Request_Should_Return_BadRequest_With_Expected_Message()
+    public async Task Invalid_Count_Request_Should_Return_BadRequest_With_Expected_Message()
     {
         var fighterServiceMock = new Mock<IFightingService>();
 
@@ -49,7 +49,7 @@ public class ArenaControllerTests
 
         var arenaController = new ArenaController(fighterServiceMock.Object);
 
-        var response = arenaController.GetIdentifier(count);
+        var response = await arenaController.GetIdentifier(count);
 
         response.As<BadRequestObjectResult>().Value.Should().Be("Arena count cannot be null. (Parameter 'count')");
     }
@@ -69,6 +69,6 @@ public class ArenaControllerTests
 
         var action = () => arenaController.GetIdentifier(count);
 
-        action.Should().Throw<Exception>();
+        action.Should().ThrowAsync<Exception>();
     }
 }
