@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-
 namespace Arena.Services.Tests;
 
 public class FightingServiceTests
@@ -9,7 +7,7 @@ public class FightingServiceTests
     {
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object);
+        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
 
         var (attacker, defender) = FightingService.GetFighters(new()
         {
@@ -26,7 +24,7 @@ public class FightingServiceTests
     {
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object);
+        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
 
         var action = () => FightingService.GetFighters(new()
         {
@@ -45,7 +43,7 @@ public class FightingServiceTests
 
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object);
+        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
 
         var action = () => fightingervice.GetHistory(Guid.Parse(guid));
 
@@ -71,10 +69,10 @@ public class FightingServiceTests
         };
 
         repositoryMock
-            .Setup(x => x.Get(x => x.Guid == guid, null, "Rounds"))
-            .ReturnsAsync(new List<ArenaEntity>() { arena });
+            .Setup(x => x.Get(guid))
+            .ReturnsAsync(arena);
 
-        var fightingervice = new FightingService(repositoryMock.Object);
+        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
 
         var result = await fightingervice.GetHistory(arena.Guid);
 
@@ -86,7 +84,7 @@ public class FightingServiceTests
     {
         var repositoryMock = new Mock<IGenericRepository<ArenaEntity>>();
 
-        var fightingervice = new FightingService(repositoryMock.Object);
+        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
 
         var action = () => fightingervice.InitializeArena(0);
 
@@ -103,7 +101,7 @@ public class FightingServiceTests
         repositoryMock.Setup(x => x.Save())
             .ReturnsAsync(false);
 
-        var fightingervice = new FightingService(repositoryMock.Object);
+        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
 
         var action = () => fightingervice.InitializeArena(1);
 
@@ -127,7 +125,7 @@ public class FightingServiceTests
             .Setup(x => x.Save())
             .ReturnsAsync(true);
 
-        var fightingervice = new FightingService(repositoryMock.Object);
+        var fightingervice = new FightingService(repositoryMock.Object, Mock.Of<IGenericRepository<Round>>());
 
         (await fightingervice.InitializeArena(1)).Should().NotBeEmpty();
     }
